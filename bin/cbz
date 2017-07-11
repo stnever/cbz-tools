@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+
+var args = require('minimist')(process.argv.slice(2)),
+		fs = require('fs'),
+		glob = require('glob'),
+		shelljs = require('shelljs'),
+		_ = require('lodash'),
+		chalk = require('chalk'),
+    path = require('path')
+		
+var _7Z = '"C:\\Program Files (x86)\\7-Zip\\7z.exe"'
+
+if ( args.h || args.help || args._.length < 1 ) {
+	console.log(`
+Uso: cbz <dir> [--save] [-v]
+
+  Gera um zip com o mesmo nome do diretório mais a extensão .cbz .
+  Este comando apenas loga a quantidade de arquivos sendo adicionados;
+  para executar o comando, use o parâmetro --save .
+`)
+	process.exit()
+}
+
+function handleErr(err) { console.log(err.stack); process.exit() }
+function isDir(f) { return fs.statSync(f).isDirectory() }
+function inc(counts, name) { counts[name] = (counts[name] || 0) + 1 }
+
+var basedir = args._[0]
+glob('**', {cwd: basedir, realpath:true}, (err, matches) => {
+	if ( err ) handleErr(err)
+   
+  var counts = {}
+	matches.forEach(file => {
+    var ext = isDir(file) ? 'dirs' : path.extname(file)
+    inc(counts, ext)
+  })
+
+  console.log('\nConteúdo do diretório:')
+  _.keysIn(counts).sort().forEach(ext => {
+    console.log(`${_.padStart(ext, 10, ' ')}: ${counts[ext]}`)
+  })
+  
+  var cbzName = `${basedir}.cbz`,
+      cmd = `${_7Z} -tzip a "${cbzName}" "${basedir}"`
+	
+  if ( args.v )
+    console.log(cmd)
+  
+  if ( !args.save ) {
+    console.log('\nPara criar o arquivo %s, use a flag --save', chalk.green(cbzName))
+  } else {
+    var proc = shelljs.exec(cmd)
+    console.log('Exit code:', proc.code)
+    
+    if ( args.v ) console.log('Program output:', proc.stdout)
+    
+    if ( proc.stderr != null && proc.stderr.trim().length > 0 ) {
+      console.log('Program stderr:', chalk.red(proc.stderr))
+    }
+  }
+})

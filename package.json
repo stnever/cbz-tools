@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "bin": {
+    "folders2cbz": "./bin/folders2cbz",
+    "cbz": "./bin/cbz"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
